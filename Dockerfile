@@ -1,14 +1,17 @@
-FROM golang:1.11-alpine as builder
+FROM golang:1.21-alpine as builder
 
-WORKDIR /go/src/github.com/lomik/prometheus-png
+WORKDIR /usr/src/app
 
 RUN apk --no-cache add make pkgconfig cairo-dev gcc g++
 
-COPY . .
-RUN make
+COPY go.mod go.sum form.go handler.go prom.go prom_test.go .
+COPY cmd cmd
+RUN go build cmd/prometheus-png/prometheus-png.go
+
 
 FROM ubuntu:18.04 as fonts
-RUN apt update && apt install -y fonts-roboto
+RUN apt-get update && apt-get install -yy fonts-roboto
+
 
 FROM alpine:latest
 
@@ -21,6 +24,6 @@ WORKDIR /
 
 EXPOSE 8080/tcp
 
-COPY --from=builder /go/src/github.com/lomik/prometheus-png/prometheus-png /usr/bin/prometheus-png
+COPY --from=builder /usr/src/app/prometheus-png /usr/bin/prometheus-png
 
 ENTRYPOINT ["prometheus-png"]
